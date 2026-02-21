@@ -2,13 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load CSV file
-file_path = "report.csv"   # Change path if needed
+file_path = "processed_data4.csv"   # Change path if needed
 df = pd.read_csv(file_path)
 
 # Convert 'Creation time' column to datetime
 df['Creation time'] = pd.to_datetime(
     df['Creation time'],
-    dayfirst=True,
+    dayfirst=False,
     errors='coerce'
 )
 
@@ -17,13 +17,15 @@ df = df.dropna(subset=['Creation time'])
 
 # Create Month-Year column
 df['Month'] = df['Creation time'].dt.to_period('M')
-
+Total_Transactions=0
 # Group by Month
 monthly_report = df.groupby('Month').agg(
     Total_Transactions=('Transaction ID', 'count'),
+     
     Total_Sales=('Amount', 'sum'),
     Total_Net_Amount=('Net Amount', 'sum')
 ).reset_index()
+print("Total Footfall",monthly_report['Total_Transactions'].sum())
 
 # Convert Month to string
 monthly_report['Month'] = monthly_report['Month'].astype(str)

@@ -1,4 +1,4 @@
-# Monthly Sales Forecast (Using New Dataset)
+# Monthly Sales Forecast (Using Year-Month Dataset)
 
 import pandas as pd
 import numpy as np
@@ -9,33 +9,25 @@ from sklearn.metrics import mean_squared_error, r2_score
 # =========================
 # 1️⃣ Load Dataset
 # =========================
-df = pd.read_csv("processed_data3.csv")
+df = pd.read_csv("processed_clean.csv")
 
 print("Dataset Loaded:", df.shape)
 
 # =========================
-# 2️⃣ Convert Creation time to Datetime
+# 2️⃣ Convert Year-Month to Period
 # =========================
-df['Creation time'] = pd.to_datetime(df['Creation time'])
-
-# Extract Year & Month from datetime (safer method)
-df['Year'] = df['Creation time'].dt.year
-df['Month'] = df['Creation time'].dt.month
+df['YearMonth'] = pd.to_datetime(df['Year-Month']).dt.to_period('M')
 
 # =========================
 # 3️⃣ Group Monthly Sales
 # =========================
-monthly_sales = df.groupby(
-    [df['Creation time'].dt.to_period("M")]
-)['Amount'].sum().reset_index()
-
-monthly_sales.columns = ['YearMonth', 'Amount']
-
-# Convert Period to string
-monthly_sales['YearMonth'] = monthly_sales['YearMonth'].astype(str)
+monthly_sales = df.groupby('YearMonth')['Amount'].sum().reset_index()
 
 # Sort properly
 monthly_sales = monthly_sales.sort_values('YearMonth').reset_index(drop=True)
+
+# Convert Period to string for plotting
+monthly_sales['YearMonth_str'] = monthly_sales['YearMonth'].astype(str)
 
 # Create Month Index
 monthly_sales['MonthIndex'] = np.arange(len(monthly_sales))
@@ -61,16 +53,33 @@ future_index = np.arange(len(monthly_sales), len(monthly_sales) + 6).reshape(-1,
 future_predictions = model.predict(future_index)
 
 # Generate future month labels
-last_period = pd.Period(monthly_sales['YearMonth'].iloc[-1], freq='M')
+last_period = monthly_sales['YearMonth'].iloc[-1]
 future_months = [(last_period + i).strftime('%Y-%m') for i in range(1, 7)]
 
 # Combine historical + forecast
-all_months = monthly_sales['YearMonth'].tolist() + future_months
+all_months = monthly_sales['YearMonth_str'].tolist() + future_months
 all_sales = list(monthly_sales['Amount']) + list(future_predictions)
 
 # =========================
-# 6️⃣ Plot
+# 6️⃣ Plot Actual vs Predicted
 # =========================
+
+plt.figure(figsize=(12, 6))
+plt.plot(monthly_sales['YearMonth_str'], y, marker='o', label='Actual Sales')
+plt.plot(monthly_sales['YearMonth_str'], y_pred, marker='o', linestyle='--', label='Predicted Sales')
+plt.xticks(rotation=45)
+plt.xlabel("Month")
+plt.ylabel("Total Sales")
+plt.title("Actual vs Predicted Monthly Sales")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# =========================
+# 7️⃣ Plot Forecast (Historical + Next 6 Months)
+# =========================
+
 plt.figure(figsize=(12, 6))
 plt.plot(all_months, all_sales, marker='o')
 plt.xticks(rotation=45)
