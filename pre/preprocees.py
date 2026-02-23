@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
-def preprocess_data(input_path, output_path="processed_clean1.csv"):
+def preprocess_data(input_path, output_path="processed_clean2.csv"):
 
     df = pd.read_csv(input_path)
     print("Original Columns:")
@@ -119,4 +119,4 @@ def preprocess_data(input_path, output_path="processed_clean1.csv"):
 
 
 if __name__ == "__main__":
-    preprocess_data("report.csv")
+    preprocess_data("/Users/adityadebchowdhury/Desktop/gpay/combined_report2.csv")

@@ -1,10 +1,9 @@
-# Monthly Sales Forecast using SVR
+# Monthly Sales Forecast (Using Year-Month Dataset)
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.svm import SVR
-from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
 # =========================
@@ -23,6 +22,8 @@ df['YearMonth'] = pd.to_datetime(df['Year-Month']).dt.to_period('M')
 # 3️⃣ Group Monthly Sales
 # =========================
 monthly_sales = df.groupby('YearMonth')['Amount'].sum().reset_index()
+
+# Sort properly
 monthly_sales = monthly_sales.sort_values('YearMonth').reset_index(drop=True)
 
 # Convert Period to string for plotting
@@ -35,38 +36,21 @@ X = monthly_sales[['MonthIndex']]
 y = monthly_sales['Amount']
 
 # =========================
-# 4️⃣ Scale Data (IMPORTANT for SVR)
+# 4️⃣ Train Model
 # =========================
-scaler_X = StandardScaler()
-scaler_y = StandardScaler()
+model = LinearRegression()
+model.fit(X, y)
 
-X_scaled = scaler_X.fit_transform(X)
-y_scaled = scaler_y.fit_transform(y.values.reshape(-1, 1)).ravel()
+y_pred = model.predict(X)
 
-# =========================
-# 5️⃣ Train SVR Model
-# =========================
-model = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=0.1)
-model.fit(X_scaled, y_scaled)
-
-# Predict training data
-y_pred_scaled = model.predict(X_scaled)
-y_pred = scaler_y.inverse_transform(y_pred_scaled.reshape(-1, 1)).ravel()
-
-# Evaluate model
 mse = mean_squared_error(y, y_pred)
 r2 = r2_score(y, y_pred)
 
 # =========================
-# 6️⃣ Predict Next 6 Months
+# 5️⃣ Predict Next 6 Months
 # =========================
 future_index = np.arange(len(monthly_sales), len(monthly_sales) + 6).reshape(-1, 1)
-future_index_scaled = scaler_X.transform(future_index)
-
-future_predictions_scaled = model.predict(future_index_scaled)
-future_predictions = scaler_y.inverse_transform(
-    future_predictions_scaled.reshape(-1, 1)
-).ravel()
+future_predictions = model.predict(future_index)
 
 # Generate future month labels
 last_period = monthly_sales['YearMonth'].iloc[-1]
@@ -77,37 +61,39 @@ all_months = monthly_sales['YearMonth_str'].tolist() + future_months
 all_sales = list(monthly_sales['Amount']) + list(future_predictions)
 
 # =========================
-# 7️⃣ Plot Actual vs Predicted
+# 6️⃣ Plot Actual vs Predicted
 # =========================
+
 plt.figure(figsize=(12, 6))
 plt.plot(monthly_sales['YearMonth_str'], y, marker='o', label='Actual Sales')
-plt.plot(monthly_sales['YearMonth_str'], y_pred, linestyle='--', marker='o', label='SVR Predicted Sales')
+plt.plot(monthly_sales['YearMonth_str'], y_pred, marker='o', linestyle='--', label='Predicted Sales')
 plt.xticks(rotation=45)
 plt.xlabel("Month")
 plt.ylabel("Total Sales")
-plt.title("Actual vs Predicted Monthly Sales (SVR)")
+plt.title("Actual vs Predicted Monthly Sales")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.show()
 
 # =========================
-# 8️⃣ Plot Forecast (Historical + Future)
+# 7️⃣ Plot Forecast (Historical + Next 6 Months)
 # =========================
+
 plt.figure(figsize=(12, 6))
 plt.plot(all_months, all_sales, marker='o')
 plt.xticks(rotation=45)
 plt.xlabel("Month")
 plt.ylabel("Total Sales")
-plt.title("Monthly Sales Forecast (Next 6 Months - SVR)")
+plt.title("Monthly Sales Forecast (Next 6 Months)")
 plt.grid(True)
 plt.tight_layout()
 plt.show()
 
 # =========================
-# 9️⃣ Print Results
+# 7️⃣ Print Results
 # =========================
-print("\nNext 6 Months Forecast:")
+print("Next 6 Months Forecast:")
 for m, p in zip(future_months, future_predictions):
     print(m, ":", round(p, 2))
 
